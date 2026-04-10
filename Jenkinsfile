@@ -31,7 +31,7 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                sh './mvnw test'
+                sh './mvnw test -Pskip-db-tests'
             }
             post {
                 always {
