@@ -44,6 +44,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
+                        chmod +x mvnw || true
                         ./mvnw sonar:sonar \
                         -Dsonar.projectKey=spring-petclinic \
                         -Dsonar.host.url=http://sonarqube:9000 \
