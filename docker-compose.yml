@@ -1,3 +1,29 @@
+# services:
+#   mysql:
+#     image: mysql:9.6
+#     ports:
+#       - "3306:3306"
+#     environment:
+#       - MYSQL_ROOT_PASSWORD=
+#       - MYSQL_ALLOW_EMPTY_PASSWORD=true
+#       - MYSQL_USER=petclinic
+#       - MYSQL_PASSWORD=petclinic
+#       - MYSQL_DATABASE=petclinic
+#     volumes:
+#       - "./conf.d:/etc/mysql/conf.d:ro"
+#   postgres:
+#     image: postgres:18.3
+#     ports:
+#       - "5432:5432"
+#     environment:
+#       - POSTGRES_PASSWORD=petclinic
+#       - POSTGRES_USER=petclinic
+#       - POSTGRES_DB=petclinic
+
+
+
+##############################################################
+
 services:
   mysql:
     image: mysql:9.6
@@ -11,6 +37,9 @@ services:
       - MYSQL_DATABASE=petclinic
     volumes:
       - "./conf.d:/etc/mysql/conf.d:ro"
+    networks:
+      - devsecops-net         
+
   postgres:
     image: postgres:18.3
     ports:
@@ -19,3 +48,21 @@ services:
       - POSTGRES_PASSWORD=petclinic
       - POSTGRES_USER=petclinic
       - POSTGRES_DB=petclinic
+    networks:
+      - devsecops-net        
+
+  zap:               
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: zap
+    networks:
+      - devsecops-net
+    volumes:
+      - zap-reports:/zap/wrk
+    command: sleep infinity
+
+networks:                   
+  devsecops-net:
+    external: true          
+
+volumes:                      
+  zap-reports:
