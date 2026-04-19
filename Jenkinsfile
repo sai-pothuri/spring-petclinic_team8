@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = credentials('sonarqube-token')
+        SONAR_TOKEN = credentials('admin')
         ANSIBLE_HOST_KEY_CHECKING = 'False'
     }
 
