@@ -63,59 +63,61 @@ pipeline {
             }
         }
 
-    stage('Burp Suite Scan') {
-        steps {
-            script {
-                sh '''
-                    echo "Sending traffic through Burp proxy..."
-                    curl --proxy http://burpsuite:8080 \
-                        --insecure \
-                        http://jenkins:9966/ || true
+        stage('Burp Suite Scan') {
+            steps {
+                script {
+                    sh '''
+                        echo "Sending traffic through Burp proxy..."
+                        curl --proxy http://burpsuite:8080 \
+                            --insecure \
+                            http://jenkins:9966/ || true
 
-                    curl --proxy http://burpsuite:8080 \
-                        --insecure \
-                        http://jenkins:9966/owners || true
+                        curl --proxy http://burpsuite:8080 \
+                            --insecure \
+                            http://jenkins:9966/owners || true
 
-                    curl --proxy http://burpsuite:8080 \
-                        --insecure \
-                        http://jenkins:9966/vets.html || true
+                        curl --proxy http://burpsuite:8080 \
+                            --insecure \
+                            http://jenkins:9966/vets.html || true
 
-                    echo "Traffic sent to Burp proxy successfully"
-                '''
+                        echo "Traffic sent to Burp proxy successfully"
+                    '''
+                }
+            }
+            post {
+                always {
+                    // Publish whatever report Burp generates
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'burp-reports',
+                        reportFiles: 'burp_report.html',
+                        reportName: 'Burp Suite Report'
+                    ])
+                }
             }
         }
-        post {
-            always {
-                // Publish whatever report Burp generates
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'burp-reports',
-                    reportFiles: 'burp_report.html',
-                    reportName: 'Burp Suite Report'
-                ])
-            }
-        }
-    }
+
         stage('Deploy to Production (Ansible)') {
             steps {
-               // sshagent(['ansible-ssh-key']) {
-               //     sh '''
-               //         ansible-playbook -i ansible/inventory.ini \
-               //             ansible/deploy.yml \
-               //             --extra-vars "artifact_path=${WORKSPACE}/target/spring-petclinic-*.jar"
-               //     '''
-               // }
-               //  sh '''
-               //  /home/lili/.local/bin/ansible-playbook -i ansible/inventory.ini \
-                   //  ansible/deploy.yml \
-                   //  --extra-vars "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'"
-               //  '''
-               //sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"
-               sshagent(['ansible-ssh-key']){
-                   sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"         
-               }
+                // sshagent(['ansible-ssh-key']) {
+                //     sh '''
+                //         ansible-playbook -i ansible/inventory.ini \
+                //             ansible/deploy.yml \
+                //             --extra-vars "artifact_path=${WORKSPACE}/target/spring-petclinic-*.jar"
+                //     '''
+                // }
+                //  sh '''
+                //  /home/lili/.local/bin/ansible-playbook -i ansible/inventory.ini \
+                //  ansible/deploy.yml \
+                //  --extra-vars "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'"
+                //  '''
+                //sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"
+                sshagent(['ansible-ssh-key']){
+                    sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"
+                }
+            }
         }
     }
 
