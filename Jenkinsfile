@@ -112,8 +112,10 @@ pipeline {
                    //  ansible/deploy.yml \
                    //  --extra-vars "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'"
                //  '''
-                sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"
-            }
+               //sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"
+               sshagent(['ansible-ssh-key']){
+                   sh "ssh -o StrictHostKeyChecking=no lili@10.0.0.50 '~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini ~/spring-petclinic_team8/ansible/deploy.yml'"         
+               }
         }
     }
 
