@@ -1,0 +1,8 @@
+---
+- name: Deploy Spring Petclinic Application
+  hosts: prod_vm
+  tasks:  
+    - name: Start Application via Docker Compose
+      shell: |
+        cd /home/lili/spring-petclinic_team8
+        docker-compose -f docker-compose.devsecops.yml up -d
