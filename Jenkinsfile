@@ -99,13 +99,18 @@ pipeline {
     }
         stage('Deploy to Production (Ansible)') {
             steps {
-                sshagent(['ansible-ssh-key']) {
-                    sh '''
-                        ansible-playbook -i ansible/inventory.ini \
-                            ansible/deploy.yml \
-                            --extra-vars "artifact_path=${WORKSPACE}/target/spring-petclinic-*.jar"
-                    '''
-                }
+               # sshagent(['ansible-ssh-key']) {
+               #     sh '''
+               #         ansible-playbook -i ansible/inventory.ini \
+               #             ansible/deploy.yml \
+               #             --extra-vars "artifact_path=${WORKSPACE}/target/spring-petclinic-*.jar"
+               #     '''
+               # }
+                sh '''
+                /home/lili/.local/bin/ansible-playbook -i ansible/inventory.ini \
+                    ansible/deploy.yml \
+                    --extra-vars "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'"
+               '''
             }
         }
     }
