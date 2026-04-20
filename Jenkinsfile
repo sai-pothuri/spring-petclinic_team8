@@ -80,7 +80,7 @@ pipeline {
                     done
 
                     # Get Jenkins container IP
-                    JENKINS_IP=$(hostname -I | awk "{print \$1}")
+                    JENKINS_IP=$(hostname -I | awk '{print $1}' | tr -d '[:space:]')
                     echo "Jenkins IP: $JENKINS_IP"
 
                     # Trigger ZAP spider
@@ -113,7 +113,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy to Production (Ansible)') {
             steps {
                 // sshagent(['ansible-ssh-key']) {
