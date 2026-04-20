@@ -65,28 +65,29 @@ pipeline {
 
         stage('Burp Suite Scan') {
             steps {
-                script {
-                    sh '''
-                        echo "Sending traffic through Burp proxy..."
-                        curl --proxy http://burpsuite:8080 \
-                            --insecure \
-                            http://jenkins:9966/ || true
-
-                        curl --proxy http://burpsuite:8080 \
-                            --insecure \
-                            http://jenkins:9966/owners || true
-
-                        curl --proxy http://burpsuite:8080 \
-                            --insecure \
-                            http://jenkins:9966/vets.html || true
-
-                        echo "Traffic sent to Burp proxy successfully"
-                    '''
-                }
+                sh '''
+                    mkdir -p burp-reports
+                    
+                    # Trigger ZAP spider against the app
+                    curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://jenkins:9966&maxChildren=10" || true
+                    
+                    # Wait for spider to complete
+                    sleep 15
+                    
+                    # Trigger active scan
+                    curl -s "http://burpsuite:8080/JSON/ascan/action/scan/?url=http://jenkins:9966&recurse=true" || true
+                    
+                    # Wait for scan to complete
+                    sleep 30
+                    
+                    # Generate HTML report
+                    curl -s "http://burpsuite:8080/OTHER/core/other/htmlreport/" > burp-reports/burp_report.html
+                    
+                    echo "ZAP scan complete!"
+                '''
             }
             post {
                 always {
-                    // Publish whatever report Burp generates
                     publishHTML(target: [
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
@@ -98,7 +99,6 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy to Production (Ansible)') {
             steps {
                 // sshagent(['ansible-ssh-key']) {

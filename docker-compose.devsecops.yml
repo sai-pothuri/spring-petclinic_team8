@@ -86,13 +86,6 @@ services:
     networks:
       - devsecops-net
 
-  # burpsuite:
-  #   image: soham/burpsuite
-  #   container_name: burpsuite
-  #   ports:
-  #     - "8082:8080"
-  #   networks:
-  #     - devsecops-net
   burpsuite:
     image: ghcr.io/zaproxy/zaproxy:stable
     container_name: burpsuite
@@ -100,3 +93,4 @@ services:
       - "8082:8080"
     networks:
       - devsecops-net
+    command: zap.sh -daemon -port 8080 -host 0.0.0.0 -config api.disablekey=true -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
