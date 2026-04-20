@@ -109,19 +109,6 @@ pipeline {
                 }
             }
         }
-            post {
-                always {
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'burp-reports',
-                        reportFiles: 'burp_report.html',
-                        reportName: 'Burp Suite Report'
-                    ])
-                }
-            }
-        }
 
         stage('Deploy to Production (Ansible)') {
             steps {
