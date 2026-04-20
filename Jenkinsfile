@@ -67,22 +67,36 @@ pipeline {
             steps {
                 sh '''
                     mkdir -p burp-reports
-                    
-                    # Trigger ZAP spider against the app
-                    curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://jenkins:9966&maxChildren=10" || true
-                    
-                    # Wait for spider to complete
+
+                    # Start the app temporarily
+                    java -jar target/*.jar --server.port=9966 &
+                    APP_PID=$!
+
+                    # Wait for app to be ready
+                    echo "Waiting for app to start..."
+                    for i in $(seq 1 20); do
+                        curl -s http://localhost:9966/actuator/health && break
+                        sleep 5
+                    done
+
+                    # Get Jenkins container IP
+                    JENKINS_IP=$(hostname -I | awk "{print \$1}")
+                    echo "Jenkins IP: $JENKINS_IP"
+
+                    # Trigger ZAP spider
+                    curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://${JENKINS_IP}:9966&maxChildren=10" || true
                     sleep 15
-                    
+
                     # Trigger active scan
-                    curl -s "http://burpsuite:8080/JSON/ascan/action/scan/?url=http://jenkins:9966&recurse=true" || true
-                    
-                    # Wait for scan to complete
+                    curl -s "http://burpsuite:8080/JSON/ascan/action/scan/?url=http://${JENKINS_IP}:9966&recurse=true" || true
                     sleep 30
-                    
+
                     # Generate HTML report
                     curl -s "http://burpsuite:8080/OTHER/core/other/htmlreport/" > burp-reports/burp_report.html
-                    
+
+                    # Stop the app
+                    kill $APP_PID || true
+
                     echo "ZAP scan complete!"
                 '''
             }
@@ -99,6 +113,7 @@ pipeline {
                 }
             }
         }
+        
         stage('Deploy to Production (Ansible)') {
             steps {
                 // sshagent(['ansible-ssh-key']) {
