@@ -83,8 +83,15 @@ services:
     networks:
       - devsecops-net
 
+  # burpsuite:
+  #   image: soham/burpsuite
+  #   container_name: burpsuite
+  #   ports:
+  #     - "8082:8080"
+  #   networks:
+  #     - devsecops-net
   burpsuite:
-    image: soham/burpsuite
+    image: ghcr.io/zaproxy/zaproxy:stable
     container_name: burpsuite
     ports:
       - "8082:8080"
