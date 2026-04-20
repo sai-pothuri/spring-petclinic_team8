@@ -79,19 +79,15 @@ pipeline {
                         sleep 5
                     done
 
-                    # Get Jenkins container IP
+                    # Get Jenkins IP
                     JENKINS_IP=$(hostname -I | awk '{print $1}' | tr -d '[:space:]')
                     echo "Jenkins IP: $JENKINS_IP"
 
-                    # Trigger ZAP spider
+                    # Spider only - no active scan
                     curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://${JENKINS_IP}:9966&maxChildren=10" || true
-                    sleep 15
-
-                    # Trigger active scan
-                    curl -s "http://burpsuite:8080/JSON/ascan/action/scan/?url=http://${JENKINS_IP}:9966&recurse=true" || true
                     sleep 30
 
-                    # Generate HTML report
+                    # Generate report
                     curl -s "http://burpsuite:8080/OTHER/core/other/htmlreport/" > burp-reports/burp_report.html
 
                     # Stop the app
@@ -100,6 +96,19 @@ pipeline {
                     echo "ZAP scan complete!"
                 '''
             }
+            post {
+                always {
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'burp-reports',
+                        reportFiles: 'burp_report.html',
+                        reportName: 'Burp Suite Report'
+                    ])
+                }
+            }
+        }
             post {
                 always {
                     publishHTML(target: [
