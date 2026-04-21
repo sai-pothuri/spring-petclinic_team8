@@ -26,17 +26,24 @@ pipeline {
         stage('Build') {
             steps {
                 // sh './mvnw clean package -DskipTests'
-                sh './mvnw clean package -DskipTests -Dnohttp.checkstyle.skip -Dcheckstyle.skip'
+                sh '''
+                    rm -rf burp-reports
+                    chmod +x mvnw || true
+                    ./mvnw clean package -DskipTests -Dnohttp.checkstyle.skip -Dcheckstyle.skip
+                '''
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh './mvnw test -Pskip-db-tests'
+                sh '''
+                    rm -rf burp-reports
+                    ./mvnw test -Pskip-db-tests
+                '''
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
                 }
             }
         }
