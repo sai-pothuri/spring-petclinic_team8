@@ -144,46 +144,71 @@ pipeline {
         // }
 
         
-        stage('Docker Build & Package') {
-            steps {
-                sh '''
-                    # 构建镜像 (标签设为 v4)
-                    docker build -t petclinic:v4 .
-                    # 导出镜像为 tar 文件，方便 scp 传输
-                    docker save petclinic:v4 -o petclinic_v4.tar
-                '''
-            }
-        }
+        // stage('Docker Build & Package') {
+        //     steps {
+        //         sh '''
+        //             # 构建镜像 (标签设为 v4)
+        //             docker build -t petclinic:v4 .
+        //             # 导出镜像为 tar 文件，方便 scp 传输
+        //             docker save petclinic:v4 -o petclinic_v4.tar
+        //         '''
+        //     }
+        // }
 
         
-        stage('Transfer Image to VM') {
+        // stage('Transfer Image to VM') {
+        //     steps {
+        //         sshagent(['ansible-ssh-key']) {
+        //             sh "scp -o StrictHostKeyChecking=no petclinic_v4.tar lili@10.0.0.50:/tmp/petclinic_v4.tar"
+        //         }
+        //     }
+        // }
+
+        
+        // stage('Remote Deploy (Docker)') {
+        //     steps {
+        //         sshagent(['ansible-ssh-key']) {
+        //             sh """
+        //                 ssh -o StrictHostKeyChecking=no lili@10.0.0.50 "
+                            
+        //                     docker load -i /tmp/petclinic_v4.tar
+                            
+        //                     docker stop petclinic-app || true
+        //                     docker rm petclinic-app || true
+                            
+        //                     docker run -d --name petclinic-app -p 8080:8080 petclinic:v4
+
+        //                     rm /tmp/petclinic_v4.tar
+        //                 "
+        //             """
+        //         }
+        //     }
+        // }
+
+
+        stage('Deploy to Production (Ansible)') {
             steps {
                 sshagent(['ansible-ssh-key']) {
-                    sh "scp -o StrictHostKeyChecking=no petclinic_v4.tar lili@10.0.0.50:/tmp/petclinic_v4.tar"
+                    sh '''
+                        JAR_PATH=$(find target -maxdepth 1 -name "*.jar" ! -name "original-*.jar" | head -n 1)
+
+                        if [ -z "$JAR_PATH" ]; then
+                        echo "No JAR found in target/"
+                        exit 1
+                        fi
+
+                        echo "Deploying $JAR_PATH"
+
+                        ansible-playbook -i ansible/inventory.ini \
+                        ansible/deploy.yml \
+                        -e "artifact_path=$JAR_PATH" \
+                        --ssh-common-args='-o StrictHostKeyChecking=no'
+                    '''
                 }
             }
         }
-
         
-        stage('Remote Deploy (Docker)') {
-            steps {
-                sshagent(['ansible-ssh-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no lili@10.0.0.50 "
-                            
-                            docker load -i /tmp/petclinic_v4.tar
-                            
-                            docker stop petclinic-app || true
-                            docker rm petclinic-app || true
-                            
-                            docker run -d --name petclinic-app -p 8080:8080 petclinic:v4
 
-                            rm /tmp/petclinic_v4.tar
-                        "
-                    """
-                }
-            }
-        }
     }
 
     post {
