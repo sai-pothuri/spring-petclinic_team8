@@ -10,4 +10,5 @@ scrape_configs:
   - job_name: 'spring-petclinic'
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['10.0.0.50:8080']
+      - targets: ['10.0.0.128:8080']
+
