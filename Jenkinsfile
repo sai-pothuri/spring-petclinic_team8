@@ -159,7 +159,7 @@ pipeline {
         stage('Transfer Image to VM') {
             steps {
                 sshagent(['ansible-ssh-key']) {
-                    sh "scp -o StrictHostKeyChecking=no petclinic_v4.tarlili@10.0.0.50:/tmp/petclinic_v4.tar"
+                    sh "scp -o StrictHostKeyChecking=no petclinic_v4.tar lili@10.0.0.50:/tmp/petclinic_v4.tar"
                 }
             }
         }
