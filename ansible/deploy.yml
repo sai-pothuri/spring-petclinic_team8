@@ -8,72 +8,115 @@
 #         docker-compose -f docker-compose.devsecops.yml up -d
 
 
+# ---
+# - name: Deploy Spring PetClinic to Production
+#   hosts: prod_vm
+#   become: yes
+
+#   vars:
+#     app_dir: /opt/petclinic
+#     app_user: petclinic
+#     # 刚才我们通过 docker exec 确认的版本号
+#     artifact_path: "/var/jenkins_home/workspace/spring-petclinic/target/spring-petclinic-4.0.0-SNAPSHOT.jar" 
+
+#   tasks:
+#     # - name: Create app user
+#     #   user:
+#     #     name: "{{ app_user }}"
+#     #     system: yes
+#     #     create_home: yes
+
+#     # - name: Create app directory
+#     #   file:
+#     #     path: "{{ app_dir }}"
+#     #     state: directory
+#     #     owner: "{{ app_user }}"
+#     #     mode: '0755'
+
+#     - name: Stop existing application
+#       systemd:
+#         name: petclinic
+#         state: stopped
+#       ignore_errors: yes
+
+#     - name: Copy JAR to production
+#       copy:
+#         src: "{{ artifact_path }}"
+#         dest: "{{ app_dir }}/spring-petclinic.jar"
+#         owner: "{{ app_user }}"
+#         mode: '0755'
+
+#     - name: Create systemd service
+#       copy:
+#         dest: /etc/systemd/system/petclinic.service
+#         content: |
+#           [Unit]
+#           Description=Spring PetClinic
+#           After=network.target
+
+#           [Service]
+#           User={{ app_user }}
+#           # 确保生产环境 10.0.0.50 上的 java 路径正确
+#           ExecStart=/usr/bin/java -jar {{ app_dir }}/spring-petclinic.jar
+#           SuccessExitStatus=143
+#           Restart=always
+#           RestartSec=5
+
+#           [Install]
+#           WantedBy=multi-user.target
+
+#     - name: Reload systemd
+#       systemd:
+#         daemon_reload: yes
+
+#     - name: Start and enable application
+#       systemd:
+#         name: petclinic
+#         state: started
+#         enabled: yes
+
+#     - name: Wait for app to start
+#       wait_for:
+#         port: 8080
+#         timeout: 60
+
+
+
 ---
-- name: Deploy Spring PetClinic to Production
+- name: Deploy Spring PetClinic to User Home (No Sudo)
   hosts: prod_vm
-  become: yes
+  become: no  # <--- 彻底关闭提权，不再调用 sudo
 
   vars:
-    app_dir: /opt/petclinic
-    app_user: petclinic
-    # 刚才我们通过 docker exec 确认的版本号
-    artifact_path: "/var/jenkins_home/workspace/spring-petclinic/target/spring-petclinic-4.0.0-SNAPSHOT.jar" 
+    # 改到 lili 用户有权操作的家目录下
+    app_dir: "/home/lili/petclinic"
+    # artifact_path: "target/spring-petclinic-4.0.0-SNAPSHOT.jar" 
 
   tasks:
-    - name: Create app user
-      user:
-        name: "{{ app_user }}"
-        system: yes
-        create_home: yes
-
-    - name: Create app directory
+    - name: Create app directory in home
       file:
         path: "{{ app_dir }}"
         state: directory
-        owner: "{{ app_user }}"
         mode: '0755'
 
     - name: Stop existing application
-      systemd:
-        name: petclinic
-        state: stopped
+      shell: |
+        PID=$(pgrep -f spring-petclinic.jar)
+        if [ -n "$PID" ]; then
+          kill -9 $PID
+        fi
       ignore_errors: yes
 
-    - name: Copy JAR to production
+    - name: Copy JAR to home directory
       copy:
         src: "{{ artifact_path }}"
         dest: "{{ app_dir }}/spring-petclinic.jar"
-        owner: "{{ app_user }}"
         mode: '0755'
 
-    - name: Create systemd service
-      copy:
-        dest: /etc/systemd/system/petclinic.service
-        content: |
-          [Unit]
-          Description=Spring PetClinic
-          After=network.target
-
-          [Service]
-          User={{ app_user }}
-          # 确保生产环境 10.0.0.50 上的 java 路径正确
-          ExecStart=/usr/bin/java -jar {{ app_dir }}/spring-petclinic.jar
-          SuccessExitStatus=143
-          Restart=always
-          RestartSec=5
-
-          [Install]
-          WantedBy=multi-user.target
-
-    - name: Reload systemd
-      systemd:
-        daemon_reload: yes
-
-    - name: Start and enable application
-      systemd:
-        name: petclinic
-        state: started
-        enabled: yes
+    - name: Start Application in Background
+      shell: "nohup java -jar {{ app_dir }}/spring-petclinic.jar > {{ app_dir }}/app.log 2>&1 &"
+      async: 10
+      poll: 0
 
     - name: Wait for app to start
       wait_for:
