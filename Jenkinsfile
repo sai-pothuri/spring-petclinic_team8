@@ -135,11 +135,21 @@ pipeline {
                     //     -e 'artifact_path=/home/lili/petclinic/spring-petclinic-4.0.0-SNAPSHOT.jar'"
                     // """
 
+                    // sh """
+                    //     ssh -o StrictHostKeyChecking=no lili@10.0.0.50 \
+                    //     "~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini \
+                    //     ~/spring-petclinic_team8/ansible/deploy.yml \
+                    //     -e 'artifact_path=${WORKSPACE}/target/spring-petclinic-4.0.0-SNAPSHOT.jar'"
+                    // """
+
+                    sh "scp -o StrictHostKeyChecking=no ${WORKSPACE}/target/spring-petclinic-4.0.0-SNAPSHOT.jar lili@10.0.0.50:/home/lili/spring-petclinic-4.0.0-SNAPSHOT.jar"
+            
+                    // 2. 然后再远程执行 Ansible，此时 artifact_path 要指向 10.0.0.50 上的那个路径
                     sh """
                         ssh -o StrictHostKeyChecking=no lili@10.0.0.50 \
                         "~/.local/bin/ansible-playbook -i ~/spring-petclinic_team8/ansible/inventory.ini \
                         ~/spring-petclinic_team8/ansible/deploy.yml \
-                        -e 'artifact_path=${WORKSPACE}/target/spring-petclinic-4.0.0-SNAPSHOT.jar'"
+                        -e 'artifact_path=/home/lili/spring-petclinic-4.0.0-SNAPSHOT.jar'"
                     """
                 }
             }
