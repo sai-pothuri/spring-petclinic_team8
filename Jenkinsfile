@@ -62,36 +62,18 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Burp Suite Scan') {
             steps {
                 sh '''
                     mkdir -p burp-reports
 
-                    # Start the app temporarily
-                    java -jar target/*.jar --server.port=9966 &
-                    APP_PID=$!
-
-                    # Wait for app to be ready
-                    echo "Waiting for app to start..."
-                    for i in $(seq 1 20); do
-                        curl -s http://localhost:9966/actuator/health && break
-                        sleep 5
-                    done
-
-                    # Get Jenkins IP
-                    JENKINS_IP=$(hostname -I | awk '{print $1}' | tr -d '[:space:]')
-                    echo "Jenkins IP: $JENKINS_IP"
-
-                    # Spider only - no active scan
-                    curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://${JENKINS_IP}:9966&maxChildren=10" || true
+                    echo "Starting ZAP spider scan against production VM..."
+                    curl -s "http://burpsuite:8080/JSON/spider/action/scan/?url=http://10.0.0.50:8080&maxChildren=10" || true
                     sleep 30
 
-                    # Generate report
+                    echo "Generating report..."
                     curl -s "http://burpsuite:8080/OTHER/core/other/htmlreport/" > burp-reports/burp_report.html
-
-                    # Stop the app
-                    kill $APP_PID || true
 
                     echo "ZAP scan complete!"
                 '''
