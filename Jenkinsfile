@@ -204,11 +204,13 @@ pipeline {
                         exit 1
                         fi
 
-                        echo "Deploying $JAR_PATH"
+                        ABS_JAR_PATH=$(readlink -f "$JAR_PATH")
+
+                        echo "Deploying $ABS_JAR_PATH"
 
                         ansible-playbook -i ansible/inventory.ini \
                         ansible/deploy.yml \
-                        -e "artifact_path=$JAR_PATH" \
+                        -e "artifact_path=$ABS_JAR_PATH" \
                         --ssh-common-args='-o StrictHostKeyChecking=no'
                     '''
                 }
